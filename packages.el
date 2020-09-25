@@ -8,13 +8,19 @@
 
 ;; To install SOME-PACKAGE from MELPA, ELPA or emacsmirror:
 ;(package! some-package)
+
 (package! polymode)
+(package! poly-R)
+(package! poly-markdown)
+
+
 (package! stan-mode)
 (package! company-stan)
 (package! flycheck-stan)
 (package! stan-snippets)
-(package! ess)
 
+(package! ess)
+(package! ess-view-data)
 ;; To install a package directly from a remote git repo, you must specify a
 ;; `:recipe'. You'll find documentation on what `:recipe' accepts here:
 ;; https://github.com/raxod502/straight.el#the-recipe-format
