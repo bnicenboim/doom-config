@@ -53,44 +53,22 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 ;; Load
-
-;; polymode rmarkdown stuff
-(use-package! poly-R
-;; :config
-;; (map! (:localleader
-;;       :map polymode-mode-map
-;;       :desc "Export"   "e" 'polymode-export
-;;       :desc "Errors" "$" 'polymode-show-process-buffer
-;;       :desc "Weave" "w" 'polymode-weave
-;;       ;; (:prefix ("n" . "Navigation")
-;;       ;;   :desc "Next" "n" . 'polymode-next-chunk
-;;       ;;   :desc "Previous" "N" . 'polymode-previous-chunk)
-;;       ;; (:prefix ("c" . "Chunks")
-;;       ;;   :desc "Narrow" "n" . 'polymode-toggle-chunk-narrowing
-;;       ;;   :desc "Kill" "k" . 'polymode-kill-chunk
-;;       ;;   :desc "Mark-Extend" "m" . 'polymode-mark-or-extend-chunk)
-;;       ))
-  )
-;; (use-package! poly-markdown
-;;   :config
-;;   (add-to-list 'auto-mode-alist '("\\.Rmd" . poly-markdown-mode))
-;;   )
-
-                                        ; regions to be ignored by ispell. For .Rmd files
+(load! "keybindings")
+;; ESS 
+                                  ; regions to be ignored by ispell. For .Rmd files
 (add-to-list 'ispell-skip-region-alist '("^```" . "```$"))
 ;; For ess / R
 (add-hook 'ess-mode-hook #'(lambda () (modify-syntax-entry ?_ "w")))
 
-(use-package! ess
+(after! ess
     ;; (require 'ess-site)
     ;; (require 'ess-mode)
     ;; (require 'ess-r-mode)
-  :config
   (setq ;ess-ask-for-ess-directory nil        ; start R in the working directory by default
         ess-fancy-comments nil ; comments in r dont get tabbed
         ess-eval-empty t             ; don't skip non-code lines.
         ess-auto-width 'window      ;  auto witdh
-        ess-use-flymake nil    ; let lsp manage lintr?
+        ;; ess-use-flymake nil    ; let lsp manage lintr?
         ess-eval-visibly 'nowait   ;; Stop R repl eval from blocking emacs.
         ess-ask-for-ess-directory t
         ess-local-process-name "R"
@@ -99,7 +77,50 @@
         comint-scroll-to-bottom-on-output t
         comint-move-point-for-output t
         )
+
+;; ;; standard control-enter evaluation
+;; (define-key ess-mode-map (kbd "<C-return>") 'ess-eval-region-or-line-and-step)
+;; (define-key ess-mode-map (kbd "<normal-state><C-return>") 'ess-eval-region-or-line-and-step)
+;; (define-key ess-mode-map (kbd "<C-S-return>") 'ess-eval-buffer)
+;; (define-key ess-mode-map [remap ess-indent-or-complete] #'company-indent-or-complete-common)
+
+(setq-hook! 'ess-r-mode-hook comment-line-break-function nil)
+
+;; from https://github.com/paullemmens/dot_doom.d/blob/master/config.el
+  (add-hook! 'prog-mode-hook #'rainbow-delimiters-mode)
+  (setq! ess-use-flymake nil)
+  (setq! lsp-ui-doc-enable nil
+         lsp-ui-doc-delay 1.5)
+
+  ;; Code indentation copied from my old config.
+  ;; Follow Hadley Wickham's R style guide
+  (setq
+   ess-style 'RStudio
+   ess-offset-continued 2
+   ess-expression-offset 0)
+
+  (setq comint-move-point-for-output t)
+
+  ;; From https://emacs.readthedocs.io/en/latest/ess__emacs_speaks_statistics.html
+  ;; TODO: find out a way to make settings generic so that I can also set ess-inf-R-font-lock-keywords
+  (setq ess-R-font-lock-keywords
+        '((ess-R-fl-keyword:modifiers  . t)
+          (ess-R-fl-keyword:fun-defs   . t)
+          (ess-R-fl-keyword:keywords   . t)
+          (ess-R-fl-keyword:assign-ops . t)
+          (ess-R-fl-keyword:constants  . t)
+          (ess-fl-keyword:fun-calls    . t)
+          (ess-fl-keyword:numbers      . t)
+          (ess-fl-keyword:operators    . t)
+          (ess-fl-keyword:delimiters) ; don't because of rainbow delimiters
+          (ess-fl-keyword:=            . t)
+          (ess-R-fl-keyword:F&T        . t)
+          (ess-R-fl-keyword:%op%       . t)))
+
+  ;; ESS buffers should not be cleaned up automatically
+  (add-hook 'inferior-ess-mode-hook #'doom-mark-buffer-as-real-h)
   )
+
 
 (defun bookdown-git ()
     "Compile a gitbook." ; Doc string.
@@ -134,13 +155,7 @@
 ;; https://github.com/polymode/polymode/issues/214
 (add-hook 'markdown-mode-hook (lambda () (when (null buffer-undo-tree) (setq buffer-undo-tree (make-undo-tree)))))
 
-;; standard control-enter evaluation
-(define-key ess-mode-map (kbd "<C-return>") 'ess-eval-region-or-line-and-step)
-(define-key ess-mode-map (kbd "<normal-state><C-return>") 'ess-eval-region-or-line-and-step)
-(define-key ess-mode-map (kbd "<C-S-return>") 'ess-eval-buffer)
-(define-key ess-mode-map [remap ess-indent-or-complete] #'company-indent-or-complete-common)
 
-(setq-hook! 'ess-r-mode-hook comment-line-break-function nil)
 
 ;; zoom in and out
 (define-key global-map (kbd "C-+") 'text-scale-increase)
