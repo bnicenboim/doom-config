@@ -153,8 +153,13 @@
 
 
 ;; https://github.com/polymode/polymode/issues/214
-(add-hook 'markdown-mode-hook (lambda () (when (null buffer-undo-tree) (setq buffer-undo-tree (make-undo-tree)))))
+(add-hook 'markdown-mode-hook (lambda ()
+                                (when (null buffer-undo-tree) (setq buffer-undo-tree (make-undo-tree)))))
 
+(after! evil-surround
+  (add-hook 'evil-markdown-mode-hook (lambda ()
+   (push '(?* . ("* " . " *")) evil-surround-pairs-alist)))
+)
 
 
 ;; zoom in and out
@@ -195,3 +200,16 @@
 
 (setq
  projectile-project-search-path '("~/dev"))
+
+;;; helm fuzzy
+(setq helm-M-x-fuzzy-match                  t
+      helm-bookmark-show-location           t
+      helm-buffers-fuzzy-matching           t
+      helm-completion-in-region-fuzzy-match t
+      helm-file-cache-fuzzy-match           t
+      helm-imenu-fuzzy-match                t
+      helm-mode-fuzzy-match                 t
+      helm-locate-fuzzy-match               t
+      helm-quick-update                     t
+      helm-recentf-fuzzy-match              t
+      helm-semantic-fuzzy-match             t)
