@@ -20,6 +20,17 @@
 (package! stan-snippets)
 
 (package! csv-mode)
+
+(package! lexic
+  :recipe (:host github :repo "tecosaur/lexic"))
+
+;; https://www.ucl.ac.uk/~ucecesf/remarkable/
+(package! remarkable
+  :recipe (:local-repo "remarkable"))  ; looks for ~/.doom.d/my/package/my-package.el
+
+(package! olivetti)
+(package! langtool)
+
 ;; To install a package directly from a remote git repo, you must specify a
 ;; `:recipe'. You'll find documentation on what `:recipe' accepts here:
 ;; https://github.com/raxod502/straight.el#the-recipe-format

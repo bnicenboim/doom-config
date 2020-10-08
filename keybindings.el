@@ -18,4 +18,9 @@
      ;; but for normal I can't get it to work:
      :nviom "C-k"    #'comint-previous-input
      :nviom "C-j"    #'comint-next-input)
- )
+
+
+;; (ess-r-devtools-install-package &optional ARG)
+
+"C-S-b" #'ess-r-devtools-install-package
+)

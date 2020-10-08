@@ -83,8 +83,12 @@
 
        :checkers
        syntax              ; tasing you for every semicolon you forget
-       spell             ; tasing you for misspelling mispelling
-       grammar           ; tasing grammar mistake every you make
+       (spell             ; tasing you for misspelling mispelling
+        +flyspell
+        +aspell
+        +everywhere
+        )
+       ;;grammar           ; tasing grammar mistake every you make
 
        :tools
        ;;ansible
@@ -95,7 +99,10 @@
        ;;ein               ; tame Jupyter notebooks with emacs
        (eval +overlay)     ; run code, run (also, repls)
        ;;gist              ; interacting with github gists
-       lookup              ; navigate your code and its documentation
+       (lookup                      ; helps you navigate your code and documentation
+        +dictionary                 ; dictionary/thesaurus is nice
+        ;; +docsets
+        )                   ; ...or in Dash docsets locally
        lsp
        magit             ; a git porcelain for Emacs
        ;;make              ; run make tasks from Emacs

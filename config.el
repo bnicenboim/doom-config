@@ -54,7 +54,7 @@
 ;; they are implemented.
 ;; Load
 (load! "keybindings")
-;; ESS 
+;; ESS
                                   ; regions to be ignored by ispell. For .Rmd files
 (add-to-list 'ispell-skip-region-alist '("^```" . "```$"))
 ;; For ess / R
@@ -77,6 +77,16 @@
         comint-scroll-to-bottom-on-output t
         comint-move-point-for-output t
         )
+  (set-company-backend! 'ess-r-mode
+    '(
+      ;;company-capf not sure if needed or autoloaded
+      ;;company-yasnippet
+      company-R-args
+      company-R-objects
+      company-ess
+      company-dabbrev-code
+      company-files
+      :separate))
 
 ;; ;; standard control-enter evaluation
 ;; (define-key ess-mode-map (kbd "<C-return>") 'ess-eval-region-or-line-and-step)
@@ -161,7 +171,6 @@
    (push '(?* . ("* " . " *")) evil-surround-pairs-alist)))
 )
 
-
 ;; zoom in and out
 (define-key global-map (kbd "C-+") 'text-scale-increase)
 (define-key global-map (kbd "C--") 'text-scale-decrease)
@@ -177,8 +186,12 @@
   (unless window-system
     (global-set-key (kbd "<mouse-4>") 'scroll-down-line)
     (global-set-key (kbd "<mouse-5>") 'scroll-up-line))
-  ;; finer undo
-  (setq evil-want-fine-undo 'fine)
+
+;;undo
+(setq undo-limit 80000000                         ; Raise undo-limit to 80Mb
+      evil-want-fine-undo t                       ; By default while in insert all changes are one big blob. Be more granular
+      auto-save-default t                         ; Nobody likes to loose work, I certainly don't
+      truncate-string-ellipsis "…")               ; Unicode ellispis are nicer than "...", and also save /precious/ space
 
 ; Make evil-mode up/down operate in screen lines instead of logical lines
   (define-key evil-motion-state-map (kbd "<down>") 'evil-next-visual-line)
@@ -187,7 +200,8 @@
   (define-key evil-visual-state-map  (kbd "<down>")  'evil-next-visual-line)
   (define-key evil-visual-state-map  (kbd "<up>")  'evil-previous-visual-line)
   ;; soft wrap around words
-  (add-hook 'text-mode-hook #'visual-line-mode)
+;; (add-hook 'text-mode-hook #'visual-line-mode)
+(global-visual-line-mode 1)
 
 ;; disallows Hebrew/arabic, it might speed text
 (setq bidi-paragraph-direction 'left-to-right
@@ -201,6 +215,9 @@
 (setq
  projectile-project-search-path '("~/dev"))
 
+
+(setq evil-multiedit-follow-matches  't)
+
 ;;; helm fuzzy
 (setq helm-M-x-fuzzy-match                  t
       helm-bookmark-show-location           t
@@ -213,3 +230,82 @@
       helm-quick-update                     t
       helm-recentf-fuzzy-match              t
       helm-semantic-fuzzy-match             t)
+
+;; company config
+(after! company
+  (setq company-idle-delay 0.5
+        company-minimum-prefix-length 2)
+  (setq company-show-numbers t)
+(add-hook 'evil-normal-state-entry-hook #'company-abort)) ;; make aborting less annoying.
+
+(setq-default history-length 1000)
+(setq-default prescient-history-length 1000)
+
+;; (set-company-backend! '(text-mode
+;;                         markdown-mode
+;;                         gfm-mode)
+;;   '(:separate company-ispell
+;;               company-files
+;;               company-yasnippet))
+
+
+;; dict
+;;https://tecosaur.github.io/emacs-config/config.html
+;; didn;t work:
+;; (setq ispell-dictionary "en-custom")
+
+;; (setq ispell-personal-dictionary (expand-file-name ".ispell_personal" doom-private-dir))
+
+
+(use-package! lexic
+  :commands lexic-search lexic-list-dictionary
+  :config
+  (map! :map lexic-mode-map
+        :n "q" #'lexic-return-from-lexic
+        :nv "RET" #'lexic-search-word-at-point
+        :n "a" #'outline-show-all
+        :n "h" (cmd! (outline-hide-sublevels 3))
+        :n "o" #'lexic-toggle-entry
+        :n "n" #'lexic-next-entry
+        :n "N" (cmd! (lexic-next-entry t))
+        :n "p" #'lexic-previous-entry
+        :n "P" (cmd! (lexic-previous-entry t))
+        :n "C-p" #'lexic-search-history-backwards
+        :n "C-n" #'lexic-search-history-forwards
+        :n "/" (cmd! (call-interactively #'lexic-search))))
+
+
+(defadvice! +lookup/dictionary-definition-lexic (identifier &optional arg)
+  "Look up the definition of the word at point (or selection) using `lexic-search'."
+  :override #'+lookup/dictionary-definition
+  (interactive
+   (list (or (doom-thing-at-point-or-region 'word)
+             (read-string "Look up in dictionary: "))
+         current-prefix-arg))
+  (lexic-search identifier nil nil t))
+
+;; dict
+;;
+(setq ispell-personal-dictionary "~/.doom.d/my-personal-dict")
+
+;; https://community.languagetool.org/ruleEditor2/
+;; https://dev.languagetool.org/tips-and-tricks
+(use-package!  langtool
+  :commands
+  (langtool-check
+             langtool-check-done
+             langtool-show-message-at-point
+             langtool-correct-buffer)
+
+   :init
+   (setq langtool-default-language "en-US")
+   :config
+   (setq langtool-language-tool-jar "/home/bruno/.language-tools/languagetool-commandline.jar")
+   (setq langtool-java-classpath
+      "/home/bruno/.language-tools/*")
+;;  (langtool-language-tool-server-jar "~/bin/LanguageTool/languagetool-server.jar")
+;;  (langtool-server-user-arguments '("-p" "8082")
+   (setq langtool-disabled-rules '("WHITESPACE_RULE" "EN_QUOTES"))
+  )
+;; /home/bruno/.langtool/LanguageTool-4.8/org/languagetool/resource/en/hunspell
+
