@@ -55,8 +55,25 @@
 ;; Load
 (load! "keybindings")
 ;; ESS
-                                  ; regions to be ignored by ispell. For .Rmd files
-(add-to-list 'ispell-skip-region-alist '("^```" . "```$"))
+
+
+;; regions to be ignored by ispell. For .Rmd files
+;; https://superuser.com/questions/345084/how-to-exclude-in-flyspell-mode-and-flyspell-buffer
+;;https://emacs.stackexchange.com/questions/44132/mmm-mode-and-flyspell
+;; https://emacs.stackexchange.com/questions/36011/make-flyspell-avoid-checking-includes-in-c
+;;https://stackoverflow.com/questions/4671908/how-to-make-flyspell-bypass-some-words-by-context
+;;https://stackoverflow.com/questions/8287330/exempt-code-chunks-in-an-sweave-document-from-emacs-spell-check
+;;https://stackoverflow.com/questions/28942860/emacs-flyspell-disable-for-custom-latex-macros
+(after! ispell
+  (pushnew! ispell-skip-region-alist
+            '("^```" . "```$")
+            '("^`" . "`$")
+            '("^[" . "]$")
+            '("^{" . "}$"))
+  )
+
+
+
 ;; For ess / R
 (add-hook 'ess-mode-hook #'(lambda () (modify-syntax-entry ?_ "w")))
 
@@ -79,7 +96,7 @@
         )
   (set-company-backend! 'ess-r-mode
     '(
-      ;;company-capf not sure if needed or autoloaded
+      ;;company-capf ;;not sure if needed or autoloaded
       ;;company-yasnippet
       company-R-args
       company-R-objects
@@ -88,19 +105,6 @@
       company-files
       :separate))
 
-;; ;; standard control-enter evaluation
-;; (define-key ess-mode-map (kbd "<C-return>") 'ess-eval-region-or-line-and-step)
-;; (define-key ess-mode-map (kbd "<normal-state><C-return>") 'ess-eval-region-or-line-and-step)
-;; (define-key ess-mode-map (kbd "<C-S-return>") 'ess-eval-buffer)
-;; (define-key ess-mode-map [remap ess-indent-or-complete] #'company-indent-or-complete-common)
-
-(setq-hook! 'ess-r-mode-hook comment-line-break-function nil)
-
-;; from https://github.com/paullemmens/dot_doom.d/blob/master/config.el
-  (add-hook! 'prog-mode-hook #'rainbow-delimiters-mode)
-  (setq! ess-use-flymake nil)
-  (setq! lsp-ui-doc-enable nil
-         lsp-ui-doc-delay 1.5)
 
   ;; Code indentation copied from my old config.
   ;; Follow Hadley Wickham's R style guide
@@ -109,28 +113,74 @@
    ess-offset-continued 2
    ess-expression-offset 0)
 
-  (setq comint-move-point-for-output t)
 
-  ;; From https://emacs.readthedocs.io/en/latest/ess__emacs_speaks_statistics.html
-  ;; TODO: find out a way to make settings generic so that I can also set ess-inf-R-font-lock-keywords
-  (setq ess-R-font-lock-keywords
-        '((ess-R-fl-keyword:modifiers  . t)
-          (ess-R-fl-keyword:fun-defs   . t)
-          (ess-R-fl-keyword:keywords   . t)
-          (ess-R-fl-keyword:assign-ops . t)
-          (ess-R-fl-keyword:constants  . t)
-          (ess-fl-keyword:fun-calls    . t)
-          (ess-fl-keyword:numbers      . t)
-          (ess-fl-keyword:operators    . t)
-          (ess-fl-keyword:delimiters) ; don't because of rainbow delimiters
-          (ess-fl-keyword:=            . t)
-          (ess-R-fl-keyword:F&T        . t)
-          (ess-R-fl-keyword:%op%       . t)))
 
-  ;; ESS buffers should not be cleaned up automatically
-  (add-hook 'inferior-ess-mode-hook #'doom-mark-buffer-as-real-h)
+  (defun ess-r-pkgdown-build-site (&optional arg)
+  "Interface for `devtools::load_all()'.
+With prefix ARG ask for extra args."
+  (interactive "P")
+  (ess-r-package-eval-linewise
+   "pkgdown::build_site(%s)\n" "Building site %s" arg
+   '("" (read-string "Arguments: " "preview = FALSE"))))
+
+
   )
 
+
+;;;; STAN
+;;; stan-mode.el
+(use-package stan-mode
+  :mode ("\\.stan\\'" . stan-mode)
+  :hook (stan-mode . stan-mode-setup)
+  ;;
+  :config
+  ;; The officially recommended offset is 2.
+  (setq stan-indentation-offset 2))
+
+;;; company-stan.el
+(use-package company-stan
+  :hook (stan-mode . company-stan-setup)
+  ;;
+  :config
+  ;; Whether to use fuzzy matching in `company-stan'
+  (setq company-stan-fuzzy nil))
+
+;;; eldoc-stan.el
+(use-package eldoc-stan
+  :hook (stan-mode . eldoc-stan-setup)
+  ;;
+  :config
+  ;; No configuration options as of now.
+  )
+
+;;; flycheck-stan.el
+(use-package flycheck-stan
+  ;; Add a hook to setup `flycheck-stan' upon `stan-mode' entry
+  :hook ((stan-mode . flycheck-stan-stanc2-setup)
+         (stan-mode . flycheck-stan-stanc3-setup))
+  :config
+  ;; A string containing the name or the path of the stanc2 executable
+  ;; If nil, defaults to `stanc2'
+  (setq flycheck-stanc-executable nil)
+  ;; A string containing the name or the path of the stanc2 executable
+  ;; If nil, defaults to `stanc3'
+  (setq flycheck-stanc3-executable nil))
+
+;;; stan-snippets.el
+(use-package stan-snippets
+  :hook (stan-mode . stan-snippets-initialize)
+  ;;
+  :config
+  ;; No configuration options as of now.
+  )
+
+
+
+
+(use-package! hl-todo
+  :config
+  (setq global-hl-todo-mode t)
+  )
 
 (defun bookdown-git ()
     "Compile a gitbook." ; Doc string.
@@ -162,23 +212,6 @@
 
 
 
-;; https://github.com/polymode/polymode/issues/214
-(add-hook 'markdown-mode-hook (lambda ()
-                                (when (null buffer-undo-tree) (setq buffer-undo-tree (make-undo-tree)))))
-
-(after! evil-surround
-  (add-hook 'evil-markdown-mode-hook (lambda ()
-   (push '(?* . ("* " . " *")) evil-surround-pairs-alist)))
-)
-
-;; zoom in and out
-(define-key global-map (kbd "C-+") 'text-scale-increase)
-(define-key global-map (kbd "C--") 'text-scale-decrease)
-
-;; window split
-(map! :leader "w /" 'evil-window-vsplit)
-
-
 
   ;; Disable the mouse support in X11 terminals in order to enable copying/pasting with the mouse
   (xterm-mouse-mode -1)
@@ -193,68 +226,22 @@
       auto-save-default t                         ; Nobody likes to loose work, I certainly don't
       truncate-string-ellipsis "…")               ; Unicode ellispis are nicer than "...", and also save /precious/ space
 
-; Make evil-mode up/down operate in screen lines instead of logical lines
-  (define-key evil-motion-state-map (kbd "<down>") 'evil-next-visual-line)
-  (define-key evil-motion-state-map  (kbd "<up>")  'evil-previous-visual-line)
-  ;; Also in visual mode
-  (define-key evil-visual-state-map  (kbd "<down>")  'evil-next-visual-line)
-  (define-key evil-visual-state-map  (kbd "<up>")  'evil-previous-visual-line)
-  ;; soft wrap around words
-;; (add-hook 'text-mode-hook #'visual-line-mode)
+
+ ;; soft wrap around words
 (global-visual-line-mode 1)
 
-;; disallows Hebrew/arabic, it might speed text
-(setq bidi-paragraph-direction 'left-to-right
-      bidi-inhibit-bpa t)
 
-
-
-(setq avy-all-windows t) ;gs works across windows
-                         ;
-
-(setq
- projectile-project-search-path '("~/dev"))
+(setq projectile-project-search-path '("~/dev"))
 
 
 (setq evil-multiedit-follow-matches  't)
 
-;;; helm fuzzy
-(setq helm-M-x-fuzzy-match                  t
-      helm-bookmark-show-location           t
-      helm-buffers-fuzzy-matching           t
-      helm-completion-in-region-fuzzy-match t
-      helm-file-cache-fuzzy-match           t
-      helm-imenu-fuzzy-match                t
-      helm-mode-fuzzy-match                 t
-      helm-locate-fuzzy-match               t
-      helm-quick-update                     t
-      helm-recentf-fuzzy-match              t
-      helm-semantic-fuzzy-match             t)
 
-;; company config
-(after! company
-  (setq company-idle-delay 0.5
-        company-minimum-prefix-length 2)
-  (setq company-show-numbers t)
-(add-hook 'evil-normal-state-entry-hook #'company-abort)) ;; make aborting less annoying.
 
 (setq-default history-length 1000)
 (setq-default prescient-history-length 1000)
 
-;; (set-company-backend! '(text-mode
-;;                         markdown-mode
-;;                         gfm-mode)
-;;   '(:separate company-ispell
-;;               company-files
-;;               company-yasnippet))
 
-
-;; dict
-;;https://tecosaur.github.io/emacs-config/config.html
-;; didn;t work:
-;; (setq ispell-dictionary "en-custom")
-
-;; (setq ispell-personal-dictionary (expand-file-name ".ispell_personal" doom-private-dir))
 
 
 (use-package! lexic
@@ -307,5 +294,62 @@
 ;;  (langtool-server-user-arguments '("-p" "8082")
    (setq langtool-disabled-rules '("WHITESPACE_RULE" "EN_QUOTES"))
   )
-;; /home/bruno/.langtool/LanguageTool-4.8/org/languagetool/resource/en/hunspell
 
+(after! evil-snipe
+  (evil-snipe-mode -1))
+
+
+;; config other checkers
+;; check config in flycheck-verify-setup
+;; https://www.macs.hw.ac.uk/~rs46/posts/2018-12-29-textlint-flycheck.html
+;; https://aliquote.org/post/text-linting/
+;;https://github.com/amperser/proselint
+;;
+(setq flycheck-disabled-checkers '(proselint))
+(setq flycheck-markdown-mdl-rules '(
+"MD001"  "MD002"  "MD003"  "MD004"  "MD005"  "MD006"  "MD007"  "MD008"  "MD009"
+ "MD010" "MD011" "MD012"
+ ;;"MD013" ;; long lines
+ "MD014" "MD015" "MD016" "MD017" "MD018"
+ "MD019" "MD020" "MD021" "MD022" "MD023" "MD024" "MD025" "MD026" "MD027"
+ "MD028" "MD029" "MD030" "MD031" "MD032" "MD033" "MD034" "MD035" "MD036"
+ "MD037" "MD038" "MD039" "MD040" "MD041" "MD042" "MD043" "MD044" "MD045"
+ "MD046"
+))
+
+(eval-after-load 'markdown-mode            '(require 'smartparens-markdown))
+
+(after! reformatter
+  :config
+  (defconst Rscript-command "Rscript")
+  (reformatter-define styler
+    :program Rscript-command
+    :args (list "--vanilla" "-e" "con <- file(\"stdin\")
+out <- styler::style_text(readLines(con))
+close(con)
+out")
+    :lighter " styler"))
+
+ ;; (use-package! helm-bibtex
+;;   :config
+  (setq bibtex-completion-bibliography
+        "/home/bruno/ownCloud/BIBFILE/bib.bib")
+  (setq bibtex-completion-pdf-field "file")
+  (setq bibtex-completion-notes-path "/home/bruno/ownCloud/BIBFILE/notes.org")
+  (setq bibtex-completion-additional-search-fields '(keywords))
+  (setq bibtex-completion-pdf-symbol "⌘")
+   (setq bibtex-completion-notes-symbol "✎")
+(setq bibtex-completion-pdf-open-function
+  (lambda (fpath)
+    (call-process "evince" nil 0 nil fpath)))
+
+(global-whitespace-mode +1)
+;; whitespace-mode
+;; free of trailing whitespace and to use 80-column width, standard indentation
+(setq whitespace-style '(trailing lines space-before-tab
+                                  indentation space-after-tab)
+      whitespace-line-column 80)
+
+;; remove the woven and exported from Rnw files to pdf
+(setq polymode-weaver-output-file-format "%s")
+  (setq polymode-exporter-output-file-format "%s")

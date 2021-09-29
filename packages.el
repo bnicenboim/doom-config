@@ -13,16 +13,24 @@
 (package! poly-R)
 (package! poly-markdown)
 
+(package! texfrag)
 
 (package! stan-mode)
 (package! company-stan)
 (package! flycheck-stan)
+(package! eldoc-stan)
 (package! stan-snippets)
+
+(package! reformatter)
 
 (package! csv-mode)
 
 (package! lexic
   :recipe (:host github :repo "tecosaur/lexic"))
+
+(package! emacs-netspeak
+  :recipe (:host github :repo "atykhonov/emacs-netspeak"))
+
 
 ;; https://www.ucl.ac.uk/~ucecesf/remarkable/
 (package! remarkable
@@ -30,6 +38,13 @@
 
 (package! olivetti)
 (package! langtool)
+
+(package! helm-bibtex)
+(package! company-ngram
+  :recipe (:host github :repo "kshramt/company-ngram"))
+
+;; (package! read-aloud
+;;   :recipe (:host github :repo "gromnitsky/read-aloud.el"))
 
 ;; To install a package directly from a remote git repo, you must specify a
 ;; `:recipe'. You'll find documentation on what `:recipe' accepts here:
